@@ -9,14 +9,18 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
-from sqlalchemy import DateTime, String, Text, create_engine, desc, select
+from sqlalchemy import DateTime, String, Text, create_engine, desc, select, update
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
-from .schemas import ExportPayload, LinkedAssetRefs, ManualOverridePayload, RecordCreateRequest, RecordResponse
+from .schemas import ExportPayload, LinkedAssetRefs, ManualOverridePayload, RecordCreateRequest, RecordResponse, RecordUpdateRequest
 
 
 class Base(DeclarativeBase):
+    pass
+
+
+class RecordConflictError(Exception):
     pass
 
 
@@ -43,15 +47,29 @@ class RecordEntity(Base):
 class ExportService:
     exports_dir: Path
 
-    def write(self, workspace: str, record_id: str, title_en: str, markdown: str, text: str) -> tuple[List[str], List[str]]:
+    def write(
+        self,
+        workspace: str,
+        record_id: str,
+        title_en: str,
+        markdown: str,
+        text: str,
+        existing_files: Optional[List[str]] = None,
+    ) -> tuple[List[str], List[str]]:
         safe_name = title_en.lower().replace(" ", "-")[:80] or record_id
         target_dir = self.exports_dir / workspace
         target_dir.mkdir(parents=True, exist_ok=True)
         files: List[str] = []
         errors: List[str] = []
 
+        file_map = {
+            Path(path).suffix.lstrip("."): Path(path)
+            for path in (existing_files or [])
+            if Path(path).suffix.lstrip(".") in {"md", "txt"}
+        }
+
         for suffix, content in (("md", markdown), ("txt", text)):
-            destination = target_dir / f"{safe_name}-{record_id}.{suffix}"
+            destination = file_map.get(suffix, target_dir / f"{safe_name}-{record_id}.{suffix}")
             try:
                 _atomic_write(destination, content)
                 files.append(str(destination))
@@ -117,6 +135,58 @@ class RecordRepository:
             session.commit()
 
         self._with_retry(_save)
+        return self.get_record(record_id)
+
+    def update_record(
+        self,
+        record_id: str,
+        payload: RecordUpdateRequest,
+        export_service: ExportService,
+    ) -> RecordResponse:
+        now = datetime.now(timezone.utc)
+
+        def _update(session: Session) -> None:
+            entity = session.get(RecordEntity, record_id)
+            if entity is None:
+                raise KeyError(record_id)
+            if entity.status not in {"ready", "manual_override"}:
+                raise ValueError(f"Only ready/manual_override records can be updated, got {entity.status}")
+            if entity.status == "manual_override" and payload.manual_override is None:
+                raise ValueError("manual_override records require a manual_override payload")
+            if entity.status == "ready" and payload.manual_override is not None:
+                raise ValueError("ready records do not accept a manual_override payload")
+
+            current_exports = ExportPayload(**json.loads(entity.exports_json))
+            files, errors = export_service.write(
+                workspace=entity.workspace,
+                record_id=entity.id,
+                title_en=entity.title_en,
+                markdown=current_exports.markdown,
+                text=current_exports.text,
+                existing_files=current_exports.files,
+            )
+            next_exports = current_exports.model_copy(update={"files": files, "errors": errors})
+
+            statement = (
+                update(RecordEntity)
+                .where(
+                    RecordEntity.id == record_id,
+                    RecordEntity.updated_at == payload.expected_updated_at,
+                )
+                .values(
+                    summary=payload.summary,
+                    tags=json.dumps(payload.tags, ensure_ascii=False),
+                    manual_override=_dumps(payload.manual_override.model_dump()) if payload.manual_override else None,
+                    exports_json=_dumps(next_exports.model_dump()),
+                    updated_at=now,
+                )
+            )
+            result = session.execute(statement)
+            if result.rowcount != 1:
+                raise RecordConflictError(record_id)
+            session.commit()
+
+        self._with_retry(_update)
         return self.get_record(record_id)
 
     def get_record(self, record_id: str) -> RecordResponse:

@@ -80,6 +80,13 @@ class RecordCreateRequest(BaseModel):
         return self
 
 
+class RecordUpdateRequest(BaseModel):
+    summary: str = Field(min_length=1)
+    tags: List[str] = Field(default_factory=list)
+    manual_override: Optional[ManualOverridePayload] = None
+    expected_updated_at: datetime
+
+
 class WaterbaseEvaluateRequest(BaseModel):
     structure_type: str
     is_retrofit: str

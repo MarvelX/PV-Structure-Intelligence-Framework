@@ -4,12 +4,18 @@ import userEvent from '@testing-library/user-event'
 import App from './App'
 
 
-function mockFetch(routes: Record<string, unknown>) {
+function mockFetch(
+  routes: Record<
+    string,
+    unknown | ((input: RequestInfo | URL, init?: RequestInit) => unknown | Promise<unknown>)
+  >,
+) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const method = init?.method ?? 'GET'
     const url = typeof input === 'string' ? input : input.toString()
     const key = `${method} ${url}`
-    const payload = routes[key]
+    const resolver = routes[key]
+    const payload = typeof resolver === 'function' ? await resolver(input, init) : resolver
 
     if (payload === undefined) {
       return new Response(JSON.stringify({ message: `Unhandled route: ${key}` }), {
@@ -144,5 +150,105 @@ describe('V1 Working Tool App', () => {
     await user.type(screen.getByLabelText('复核备注'), 'Need local institute confirmation')
 
     await waitFor(() => expect(saveButton).toBeEnabled())
+  })
+
+  it('updates editable fields on the record detail page', async () => {
+    let patchBody: Record<string, unknown> | null = null
+
+    mockFetch({
+      'GET /api/home/recent-records?limit=6': { items: [] },
+      'GET /api/records/rec-1': {
+        id: 'rec-1',
+        workspace: 'overseas',
+        title_zh: '日本既有屋面抗震评审',
+        title_en: 'JP Retrofit Roof Seismic Review',
+        status: 'manual_override',
+        tags: ['JP', 'retrofit'],
+        created_at: '2026-04-04T08:00:00Z',
+        updated_at: '2026-04-04T08:00:00Z',
+        summary: 'Need manual conclusion before final sign-off.',
+        manual_override: {
+          conclusion: '人工复核后建议专项评审',
+          note: 'Need local institute confirmation',
+        },
+        input: { project_type: 'retrofit_roof' },
+        output: { review_conclusion: '进入专项技术评审' },
+        exports: {
+          markdown: '# JP Retrofit Roof Seismic Review',
+          text: 'JP Retrofit Roof Seismic Review',
+          files: [],
+          errors: [],
+        },
+        links: {
+          rule_ids: ['TR-003'],
+          case_ids: [],
+          gate_ids: ['project_lifecycle_control_gates'],
+          checklist_ids: ['design_institute_audit_checklist'],
+        },
+      },
+      'PATCH /api/records/rec-1': async (_input: RequestInfo | URL, init?: RequestInit) => {
+        patchBody = JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>
+        return {
+          id: 'rec-1',
+          workspace: 'overseas',
+          title_zh: '日本既有屋面抗震评审',
+          title_en: 'JP Retrofit Roof Seismic Review',
+          status: 'manual_override',
+          tags: ['JP', 'retrofit', 'edited'],
+          created_at: '2026-04-04T08:00:00Z',
+          updated_at: '2026-04-05T08:00:00Z',
+          summary: '人工复核后，建议带条件进入专项技术评审。',
+          manual_override: {
+            conclusion: '人工复核后建议带条件专项评审',
+            note: 'Need local institute seismic memo',
+          },
+          input: { project_type: 'retrofit_roof' },
+          output: { review_conclusion: '进入专项技术评审' },
+          exports: {
+            markdown: '# JP Retrofit Roof Seismic Review',
+            text: 'JP Retrofit Roof Seismic Review',
+            files: [],
+            errors: [],
+          },
+          links: {
+            rule_ids: ['TR-003'],
+            case_ids: [],
+            gate_ids: ['project_lifecycle_control_gates'],
+            checklist_ids: ['design_institute_audit_checklist'],
+          },
+        }
+      },
+    })
+
+    window.history.pushState({}, '', '/records/rec-1')
+    render(<App />)
+
+    const user = userEvent.setup()
+    const summaryField = await screen.findByLabelText('摘要')
+    const tagsField = screen.getByLabelText('标签')
+    const conclusionField = screen.getByLabelText('人工结论')
+    const noteField = screen.getByLabelText('复核备注')
+
+    await user.clear(summaryField)
+    await user.type(summaryField, '人工复核后，建议带条件进入专项技术评审。')
+    await user.clear(tagsField)
+    await user.type(tagsField, 'JP, retrofit, edited')
+    await user.clear(conclusionField)
+    await user.type(conclusionField, '人工复核后建议带条件专项评审')
+    await user.clear(noteField)
+    await user.type(noteField, 'Need local institute seismic memo')
+    await user.click(screen.getByRole('button', { name: /save changes/i }))
+
+    await waitFor(() => expect(screen.getByText('保存成功')).toBeInTheDocument())
+    expect(screen.getByDisplayValue('人工复核后，建议带条件进入专项技术评审。')).toBeInTheDocument()
+    expect(patchBody).toMatchObject({
+      summary: '人工复核后，建议带条件进入专项技术评审。',
+      tags: ['JP', 'retrofit', 'edited'],
+      expected_updated_at: '2026-04-04T08:00:00Z',
+      manual_override: {
+        conclusion: '人工复核后建议带条件专项评审',
+        note: 'Need local institute seismic memo',
+      },
+    })
   })
 })

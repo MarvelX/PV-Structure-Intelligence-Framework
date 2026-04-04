@@ -14,9 +14,10 @@ from .schemas import (
     RecentRecordsResponse,
     RecordCreateRequest,
     RecordResponse,
+    RecordUpdateRequest,
     WaterbaseEvaluateRequest,
 )
-from .storage import ExportService, RecordRepository
+from .storage import ExportService, RecordConflictError, RecordRepository
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -80,6 +81,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return app.state.repository.get_record(record_id)
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=f"Record {record_id} not found") from exc
+
+    @app.patch("/api/records/{record_id}", response_model=RecordResponse)
+    async def update_record(record_id: str, payload: RecordUpdateRequest) -> RecordResponse:
+        try:
+            return app.state.repository.update_record(record_id, payload, app.state.export_service)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=f"Record {record_id} not found") from exc
+        except RecordConflictError as exc:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Record {record_id} was updated by another session. Refresh and retry.",
+            ) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     return app
 

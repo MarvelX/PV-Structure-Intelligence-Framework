@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { BrowserRouter, Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom'
-import { QueryClient, QueryClientProvider, useMutation, useQuery } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useForm, useWatch, type DefaultValues, type FieldPath } from 'react-hook-form'
 
 import './App.css'
-import { evaluateWorkspace, fetchRecentRecords, fetchRecord, saveRecord } from './lib/api'
-import type { EvaluateResponse, RecordState } from './types'
+import { evaluateWorkspace, fetchRecentRecords, fetchRecord, saveRecord, updateRecord } from './lib/api'
+import type { EvaluateResponse, RecordState, RecordUpdatePayload } from './types'
 import { overseasConfig, waterbaseConfig, type WorkspaceConfig } from './workspaces'
 
 function AppShell() {
@@ -347,9 +347,26 @@ function WorkspacePage<TValues extends Record<string, string>>({
 
 function RecordDetailPage() {
   const { recordId = '' } = useParams()
+  const queryClient = useQueryClient()
   const { data } = useQuery({
     queryKey: ['record', recordId],
     queryFn: () => fetchRecord(recordId),
+  })
+  const [saveFeedback, setSaveFeedback] = useState('')
+  const [saveError, setSaveError] = useState('')
+
+  const updateMutation = useMutation({
+    mutationFn: (payload: RecordUpdatePayload) => updateRecord(recordId, payload),
+    onSuccess: (updatedRecord) => {
+      queryClient.setQueryData(['record', recordId], updatedRecord)
+      void queryClient.invalidateQueries({ queryKey: ['recent-records'] })
+      setSaveFeedback('保存成功')
+      setSaveError('')
+    },
+    onError: (mutationError: Error) => {
+      setSaveFeedback('')
+      setSaveError(mutationError.message)
+    },
   })
 
   if (!data) {
@@ -374,12 +391,120 @@ function RecordDetailPage() {
       </section>
 
       <section className="detail-grid">
+        <RecordEditor
+          key={`${data.id}:${data.updated_at}`}
+          data={data}
+          onSave={(payload) => {
+            setSaveFeedback('')
+            setSaveError('')
+            updateMutation.mutate(payload)
+          }}
+          saveError={saveError}
+          saveFeedback={saveFeedback}
+          saving={updateMutation.isPending}
+        />
         <DetailBlock title="输入快照" content={data.input} />
         <DetailBlock title="输出详情" content={data.output} />
         <DetailBlock title="导出内容" content={data.exports} />
         <DetailBlock title="关联资产" content={data.links} />
       </section>
     </main>
+  )
+}
+
+
+function RecordEditor({
+  data,
+  onSave,
+  saveFeedback,
+  saveError,
+  saving,
+}: {
+  data: Awaited<ReturnType<typeof fetchRecord>>
+  onSave: (payload: RecordUpdatePayload) => void
+  saveFeedback: string
+  saveError: string
+  saving: boolean
+}) {
+  const [summary, setSummary] = useState(data.summary)
+  const [tagsInput, setTagsInput] = useState(data.tags.join(', '))
+  const [manualConclusion, setManualConclusion] = useState(data.manual_override?.conclusion ?? '')
+  const [manualNote, setManualNote] = useState(data.manual_override?.note ?? '')
+
+  const canSave =
+    summary.trim().length > 0 &&
+    (data.status !== 'manual_override' || (manualConclusion.trim().length > 0 && manualNote.trim().length > 0))
+
+  const saveRecordChanges = () => {
+    if (!canSave) return
+
+    onSave({
+      summary: summary.trim(),
+      tags: tagsInput
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter(Boolean),
+      manual_override:
+        data.status === 'manual_override'
+          ? {
+              conclusion: manualConclusion.trim(),
+              note: manualNote.trim(),
+            }
+          : null,
+      expected_updated_at: data.updated_at,
+    })
+  }
+
+  return (
+    <section className="panel detail-block">
+      <div className="panel-heading">
+        <div>
+          <p className="section-tag">Edit</p>
+          <h2>记录编辑</h2>
+        </div>
+        <span className="section-note">带 `updated_at` 乐观锁保存</span>
+      </div>
+
+      {saveFeedback ? <div className="empty-state">{saveFeedback}</div> : null}
+      {saveError ? <div className="error-banner">{saveError}</div> : null}
+
+      <div className="manual-panel">
+        <label className="field">
+          <span>摘要</span>
+          <textarea value={summary} onChange={(event) => setSummary(event.target.value)} />
+        </label>
+        <label className="field">
+          <span>标签</span>
+          <input value={tagsInput} onChange={(event) => setTagsInput(event.target.value)} />
+        </label>
+        {data.status === 'manual_override' ? (
+          <>
+            <label className="field">
+              <span>人工结论</span>
+              <textarea value={manualConclusion} onChange={(event) => setManualConclusion(event.target.value)} />
+            </label>
+            <label className="field">
+              <span>复核备注</span>
+              <textarea value={manualNote} onChange={(event) => setManualNote(event.target.value)} />
+            </label>
+          </>
+        ) : null}
+      </div>
+
+      <div className="action-row">
+        <button
+          className="action-button primary"
+          disabled={!canSave || saving}
+          onClick={(event) => {
+            event.preventDefault()
+            saveRecordChanges()
+          }}
+          type="button"
+        >
+          Save Changes
+        </button>
+      </div>
+    </section>
   )
 }
 

@@ -46,3 +46,13 @@ export interface RecordDetail extends RecentRecordItem {
   }
   links: LinkedAssetRefs
 }
+
+export interface RecordUpdatePayload {
+  summary: string
+  tags: string[]
+  manual_override: null | {
+    conclusion: string
+    note: string
+  }
+  expected_updated_at: string
+}

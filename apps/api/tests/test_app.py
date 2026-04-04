@@ -184,6 +184,116 @@ async def test_create_record_persists_record_and_surfaces_in_recent_and_detail(
 
 
 @pytest.mark.asyncio()
+async def test_update_record_persists_summary_tags_and_manual_override(client: AsyncClient) -> None:
+    create_response = await client.post(
+        "/api/records",
+        json={
+            "workspace": "overseas",
+            "title_zh": "日本既有屋面抗震评审",
+            "title_en": "JP Retrofit Roof Seismic Review",
+            "status": "manual_override",
+            "summary": "Need manual conclusion before final sign-off.",
+            "tags": ["JP", "retrofit"],
+            "manual_override": {
+                "conclusion": "人工复核后建议专项评审",
+                "note": "Need local institute confirmation",
+            },
+            "input": {
+                "project_type": "retrofit_roof",
+                "structure_scenario": "concrete_roof",
+            },
+            "output": {
+                "review_conclusion": "进入专项技术评审",
+                "review_signal": "重点关注既有结构承载和抗震细部做法",
+            },
+            "exports": {
+                "markdown": "# JP Retrofit Roof Seismic Review",
+                "text": "JP Retrofit Roof Seismic Review",
+            },
+            "links": {
+                "rule_ids": ["TR-003"],
+                "gate_ids": ["project_lifecycle_control_gates"],
+                "checklist_ids": ["design_institute_audit_checklist"],
+            },
+        },
+    )
+    assert create_response.status_code == 201
+    record = create_response.json()
+
+    update_response = await client.patch(
+        f"/api/records/{record['id']}",
+        json={
+            "summary": "人工复核后，建议带条件进入专项技术评审。",
+            "tags": ["JP", "retrofit", "seismic"],
+            "manual_override": {
+                "conclusion": "人工复核后建议带条件专项评审",
+                "note": "Need local institute seismic memo",
+            },
+            "expected_updated_at": record["updated_at"],
+        },
+    )
+
+    assert update_response.status_code == 200
+    updated = update_response.json()
+    assert updated["summary"] == "人工复核后，建议带条件进入专项技术评审。"
+    assert updated["tags"] == ["JP", "retrofit", "seismic"]
+    assert updated["manual_override"]["conclusion"] == "人工复核后建议带条件专项评审"
+    assert updated["updated_at"] != record["updated_at"]
+
+
+@pytest.mark.asyncio()
+async def test_update_record_rejects_stale_expected_updated_at(client: AsyncClient) -> None:
+    create_response = await client.post(
+        "/api/records",
+        json={
+            "workspace": "waterbase",
+            "title_zh": "南昌清水池高难场景",
+            "title_en": "Nanchang High Complexity Water Tank",
+            "status": "ready",
+            "summary": "优先评估柔性支架路径。",
+            "tags": ["CN"],
+            "manual_override": None,
+            "input": {"structure_type": "clear_water_tank"},
+            "output": {"recommended_path": "优先评估柔性支架路径"},
+            "exports": {
+                "markdown": "# Nanchang High Complexity Water Tank",
+                "text": "Nanchang High Complexity Water Tank",
+            },
+            "links": {
+                "rule_ids": ["WB-001"],
+                "case_ids": ["case_nanchang_water_plant"],
+            },
+        },
+    )
+    assert create_response.status_code == 201
+    record = create_response.json()
+
+    first_update = await client.patch(
+        f"/api/records/{record['id']}",
+        json={
+            "summary": "更新后的评审摘要",
+            "tags": ["CN", "updated"],
+            "manual_override": None,
+            "expected_updated_at": record["updated_at"],
+        },
+    )
+    assert first_update.status_code == 200
+
+    stale_update = await client.patch(
+        f"/api/records/{record['id']}",
+        json={
+            "summary": "被旧标签页覆盖的摘要",
+            "tags": ["CN", "stale"],
+            "manual_override": None,
+            "expected_updated_at": record["updated_at"],
+        },
+    )
+
+    assert stale_update.status_code == 409
+    assert "updated by another session" in stale_update.text
+
+
+@pytest.mark.asyncio()
 async def test_evaluate_returns_504_when_backend_exceeds_timeout(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

@@ -1,4 +1,4 @@
-import type { EvaluateResponse, RecordDetail, RecentRecordItem, Workspace } from '../types'
+import type { EvaluateResponse, RecordDetail, RecordUpdatePayload, RecentRecordItem, Workspace } from '../types'
 
 const REQUEST_TIMEOUT_MS = 10_000
 
@@ -53,6 +53,13 @@ export function evaluateWorkspace<TValues>(workspace: Workspace, payload: TValue
 export function saveRecord(payload: unknown) {
   return request<RecordDetail>('/api/records', {
     method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function updateRecord(recordId: string, payload: RecordUpdatePayload) {
+  return request<RecordDetail>(`/api/records/${recordId}`, {
+    method: 'PATCH',
     body: JSON.stringify(payload),
   })
 }
