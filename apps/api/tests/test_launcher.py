@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 from pathlib import Path
 import signal
 import subprocess
@@ -44,11 +45,33 @@ class FakeProcess:
         return 0
 
 
+class TimeoutProcess(FakeProcess):
+    def wait(self, timeout: float | None = None) -> int:
+        self.wait_calls.append(timeout)
+        raise subprocess.TimeoutExpired(cmd=["launcher"], timeout=timeout or 0)
+
+
 def test_resolve_bundle_root_prefers_meipass(monkeypatch) -> None:
     bundle_root = Path("/tmp/bundle-root")
     monkeypatch.setattr(sys, "_MEIPASS", str(bundle_root), raising=False)
 
     assert resolve_bundle_root() == bundle_root
+
+
+def test_launcher_supports_script_style_import(monkeypatch) -> None:
+    launcher_path = Path(__file__).resolve().parents[1] / "src" / "api" / "launcher.py"
+    monkeypatch.syspath_prepend(str(launcher_path.parents[1]))
+    spec = importlib.util.spec_from_file_location("launcher_standalone_test", launcher_path)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    monkeypatch.delitem(sys.modules, "api.main", raising=False)
+    monkeypatch.setitem(sys.modules, spec.name, module)
+
+    spec.loader.exec_module(module)
+
+    assert module.APP_SUPPORT_DIR_NAME == "PV Structure Intelligence Framework"
+    assert "api.main" not in sys.modules
 
 
 def test_reserve_free_port_returns_positive_port() -> None:
@@ -176,6 +199,17 @@ def test_build_cleanup_terminates_running_process() -> None:
 
     assert process.terminated is True
     assert process.wait_calls == [5]
+
+
+def test_build_cleanup_kills_child_when_terminate_times_out() -> None:
+    process = TimeoutProcess()
+
+    cleanup = build_cleanup(process)  # type: ignore[arg-type]
+    cleanup()
+
+    assert process.terminated is True
+    assert process.killed is True
+    assert process.wait_calls == [5, 5]
 
 
 def test_launch_app_wires_port_paths_and_browser(monkeypatch, tmp_path: Path) -> None:

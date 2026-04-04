@@ -11,9 +11,12 @@ import sys
 import time
 from typing import Callable
 
-from .config import Settings
-from .migrations import upgrade_database
-from .main import create_app
+try:
+    from .config import Settings
+    from .migrations import upgrade_database
+except ImportError:
+    from api.config import Settings
+    from api.migrations import upgrade_database
 
 APP_SUPPORT_DIR_NAME = "PV Structure Intelligence Framework"
 LAUNCHER_HOST = "127.0.0.1"
@@ -146,7 +149,10 @@ def terminate_child(process: subprocess.Popen[str]) -> None:
         process.wait(timeout=5)
     except subprocess.TimeoutExpired:
         process.kill()
-        process.wait(timeout=5)
+        try:
+            process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            return
 
 
 def build_cleanup(process: subprocess.Popen[str]) -> Callable[[], None]:
@@ -197,6 +203,11 @@ def main() -> int:
 
 
 def serve_app(port: int) -> int:
+    try:
+        from .main import create_app
+    except ImportError:
+        from api.main import create_app
+
     app = create_app()
     import uvicorn
 

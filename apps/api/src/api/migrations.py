@@ -55,7 +55,9 @@ def upgrade_database(settings: Settings | None = None, *, bundle_root: Path | No
     if adopted_legacy_schema and current_head == BASELINE_REVISION:
         return
 
-    command.upgrade(config, "head")
+    with engine.begin() as connection:
+        config.attributes["connection"] = connection
+        command.upgrade(config, "head")
 
 
 def main() -> None:

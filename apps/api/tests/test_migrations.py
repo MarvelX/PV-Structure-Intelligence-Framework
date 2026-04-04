@@ -5,6 +5,7 @@ from pathlib import Path
 from sqlalchemy import create_engine, inspect, text
 
 from api.config import Settings
+from api import migrations
 from api.migrations import BASELINE_REVISION, upgrade_database
 from api.storage import RecordRepository
 
@@ -37,3 +38,34 @@ def test_upgrade_database_stamps_legacy_sqlite_schema(tmp_path: Path) -> None:
         revision = connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
 
     assert revision == BASELINE_REVISION
+
+
+def test_upgrade_database_passes_runtime_connection_to_alembic(tmp_path: Path, monkeypatch) -> None:
+    runtime_dir = tmp_path / "runtime"
+    exports_dir = runtime_dir / "exports"
+    assets_dir = tmp_path / "assets"
+    runtime_dir.mkdir(parents=True, exist_ok=True)
+    exports_dir.mkdir(parents=True, exist_ok=True)
+    assets_dir.mkdir(parents=True, exist_ok=True)
+
+    settings = Settings(
+        assets_dir=assets_dir,
+        runtime_dir=runtime_dir,
+        exports_dir=exports_dir,
+        sqlite_busy_retries=2,
+    )
+
+    captured: dict[str, object] = {}
+
+    def fake_upgrade(config, revision: str) -> None:
+        captured["revision"] = revision
+        connection = config.attributes["connection"]
+        captured["database"] = str(connection.engine.url)
+        connection.execute(text("SELECT 1"))
+
+    monkeypatch.setattr(migrations.command, "upgrade", fake_upgrade)
+
+    upgrade_database(settings)
+
+    assert captured["revision"] == "head"
+    assert captured["database"] == f"sqlite:///{settings.database_path}"
