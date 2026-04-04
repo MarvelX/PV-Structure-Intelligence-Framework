@@ -13,8 +13,7 @@
 
 ```bash
 cd "/Users/xiachen/Documents/Interview for PV Mounting System Product Manager/.worktrees/codex-v1-working-tool"
-npm --prefix apps/web install
-uv sync --project apps/api
+npm run setup
 ```
 
 一条命令同时启动前后端：
