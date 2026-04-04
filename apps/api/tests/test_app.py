@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from pathlib import Path
 
 import pytest
@@ -180,3 +181,52 @@ async def test_create_record_persists_record_and_surfaces_in_recent_and_detail(
     assert len(recent_items) == 1
     assert recent_items[0]["id"] == record_id
     assert recent_items[0]["workspace"] == "overseas"
+
+
+@pytest.mark.asyncio()
+async def test_evaluate_returns_504_when_backend_exceeds_timeout(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runtime_dir = tmp_path / "runtime"
+    exports_dir = runtime_dir / "exports"
+    runtime_dir.mkdir(parents=True, exist_ok=True)
+    exports_dir.mkdir(parents=True, exist_ok=True)
+
+    monkeypatch.setenv("WORKING_TOOL_ASSETS_DIR", str(ASSETS_DIR))
+    monkeypatch.setenv("WORKING_TOOL_RUNTIME_DIR", str(runtime_dir))
+    monkeypatch.setenv("WORKING_TOOL_EXPORTS_DIR", str(exports_dir))
+    monkeypatch.setenv("WORKING_TOOL_EVALUATE_TIMEOUT_SECONDS", "0.01")
+
+    get_settings.cache_clear()
+    app = create_app()
+
+    def slow_evaluate(_payload):
+        time.sleep(0.05)
+        return None
+
+    app.state.evaluator.evaluate_waterbase = slow_evaluate
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://testserver",
+    ) as async_client:
+        response = await async_client.post(
+            "/api/workspaces/waterbase/evaluate",
+            json={
+                "structure_type": "clear_water_tank",
+                "is_retrofit": "yes",
+                "span_level": "high",
+                "wind_level": "high",
+                "corrosion_level": "high",
+                "interference_level": "high",
+                "om_requirement": "high",
+                "support_condition": "outer_support_only",
+                "target_market": "CN",
+                "engineering_inputs": {},
+                "constraint_notes": "slow path",
+            },
+        )
+
+    assert response.status_code == 504
+    assert "timed out" in response.text.lower()

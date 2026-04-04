@@ -16,6 +16,12 @@ echo "Syncing api dependencies"
   uv sync
 )
 
+echo "Applying api migrations"
+(
+  cd "${ROOT_DIR}/apps/api"
+  uv run python -m api.migrations
+)
+
 echo "Preparing runtime directories"
 mkdir -p "${ROOT_DIR}/data/runtime/exports"
 

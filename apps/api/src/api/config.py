@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     runtime_dir: Path = Field(default_factory=lambda: Path(__file__).resolve().parents[4] / "data" / "runtime")
     exports_dir: Path = Field(default_factory=lambda: Path(__file__).resolve().parents[4] / "data" / "runtime" / "exports")
     sqlite_busy_retries: int = 3
+    evaluate_timeout_seconds: float = 10.0
 
     @property
     def database_path(self) -> Path:

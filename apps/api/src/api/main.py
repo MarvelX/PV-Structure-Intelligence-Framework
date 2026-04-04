@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query
@@ -42,14 +43,30 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.post("/api/workspaces/waterbase/evaluate", response_model=EvaluateResponse)
     async def evaluate_waterbase(payload: WaterbaseEvaluateRequest) -> EvaluateResponse:
         try:
-            return app.state.evaluator.evaluate_waterbase(payload)
+            return await asyncio.wait_for(
+                asyncio.to_thread(app.state.evaluator.evaluate_waterbase, payload),
+                timeout=resolved_settings.evaluate_timeout_seconds,
+            )
+        except asyncio.TimeoutError as exc:
+            raise HTTPException(
+                status_code=504,
+                detail=f"Evaluation timed out after {resolved_settings.evaluate_timeout_seconds:g} seconds",
+            ) from exc
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     @app.post("/api/workspaces/overseas/evaluate", response_model=EvaluateResponse)
     async def evaluate_overseas(payload: OverseasEvaluateRequest) -> EvaluateResponse:
         try:
-            return app.state.evaluator.evaluate_overseas(payload)
+            return await asyncio.wait_for(
+                asyncio.to_thread(app.state.evaluator.evaluate_overseas, payload),
+                timeout=resolved_settings.evaluate_timeout_seconds,
+            )
+        except asyncio.TimeoutError as exc:
+            raise HTTPException(
+                status_code=504,
+                detail=f"Evaluation timed out after {resolved_settings.evaluate_timeout_seconds:g} seconds",
+            ) from exc
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
 

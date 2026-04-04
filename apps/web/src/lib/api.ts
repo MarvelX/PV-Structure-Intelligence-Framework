@@ -1,20 +1,38 @@
 import type { EvaluateResponse, RecordDetail, RecentRecordItem, Workspace } from '../types'
 
+const REQUEST_TIMEOUT_MS = 10_000
+
 async function request<T>(input: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(input, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init?.headers ?? {}),
-    },
-  })
+  const controller = new AbortController()
+  const timeoutId = window.setTimeout(() => {
+    controller.abort()
+  }, REQUEST_TIMEOUT_MS)
 
-  if (!response.ok) {
-    const message = await response.text()
-    throw new Error(message || `Request failed: ${response.status}`)
+  try {
+    const response = await fetch(input, {
+      ...init,
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(init?.headers ?? {}),
+      },
+    })
+
+    if (!response.ok) {
+      const message = await response.text()
+      throw new Error(message || `Request failed: ${response.status}`)
+    }
+
+    return response.json() as Promise<T>
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error(`Request timed out after ${REQUEST_TIMEOUT_MS / 1000} seconds`)
+    }
+
+    throw error
+  } finally {
+    window.clearTimeout(timeoutId)
   }
-
-  return response.json() as Promise<T>
 }
 
 export function fetchRecentRecords(limit = 6) {
