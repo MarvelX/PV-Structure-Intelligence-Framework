@@ -74,6 +74,34 @@ async def test_waterbase_evaluate_returns_ready_for_exact_rule_match(client: Asy
 
 
 @pytest.mark.asyncio()
+async def test_waterbase_evaluate_returns_manual_override_when_structure_type_has_no_matching_rule(
+    client: AsyncClient,
+) -> None:
+    response = await client.post(
+        "/api/workspaces/waterbase/evaluate",
+        json={
+            "structure_type": "auxiliary_structure",
+            "is_retrofit": "no",
+            "span_level": "high",
+            "wind_level": "high",
+            "corrosion_level": "high",
+            "interference_level": "high",
+            "om_requirement": "high",
+            "support_condition": "outer_support_only",
+            "target_market": "CN",
+            "engineering_inputs": {"wind_speed_m_s": 40},
+            "constraint_notes": "Need fallback instead of wrong ready match",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["state"] == "manual_override"
+    assert payload["linked_asset_refs"]["rule_ids"] == []
+    assert payload["workspace_specific_result"]["recommended_path"] == "进入专项评审 / Non-standard Review"
+
+
+@pytest.mark.asyncio()
 async def test_overseas_evaluate_returns_manual_override_when_rule_not_confident(
     client: AsyncClient,
 ) -> None:

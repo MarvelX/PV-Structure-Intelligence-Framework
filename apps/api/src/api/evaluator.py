@@ -135,6 +135,10 @@ class Evaluator:
                 ("targetMarket", "target_market", 2),
             ],
             minimum_score=6,
+            required_matches=[
+                ("structureType", "structure_type"),
+                ("targetMarket", "target_market"),
+            ],
         )
 
         labels_zh = _labels_for(payload, WATERBASE_LABELS, 0)
@@ -304,10 +308,13 @@ def _find_best_match(
     payload: Dict[str, Any],
     field_names: List[Tuple[str, str, int]],
     minimum_score: int,
+    required_matches: List[Tuple[str, str]] | None = None,
 ) -> Dict[str, Any] | None:
     best_rule = None
     best_score = -1
     for rule in rules:
+        if required_matches and any(rule.get(rule_key) != payload.get(payload_key) for rule_key, payload_key in required_matches):
+            continue
         score = 0
         for rule_key, payload_key, weight in field_names:
             if rule.get(rule_key) == payload.get(payload_key):
