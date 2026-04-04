@@ -4,3 +4,10 @@ tmp/
 .worktrees/
 .~*
 ~$*
+.pytest_cache/
+apps/api/.venv/
+data/runtime/*
+!data/runtime/.gitkeep
+!data/runtime/exports/
+data/runtime/exports/*
+!data/runtime/exports/.gitkeep

@@ -1,0 +1,162 @@
+[
+  {
+    "id": "TR-001",
+    "projectType": "new_ground_station",
+    "structureScenario": "standard_ground",
+    "loadEnvironment": "high_wind",
+    "foundationCondition": "conventional",
+    "siteConstraint": "short_window",
+    "targetMarket": "CN",
+    "reviewConclusionZh": "可进入标准技术评审",
+    "reviewSignalZh": "以抗风和基础埋深校核为主",
+    "technicalFocusZh": [
+      "确认阵列排布和抗风抬升边界",
+      "核对地勘、地基承载和基础埋深",
+      "复核施工窗口是否允许分区交付"
+    ],
+    "loadFoundationFocusZh": [
+      "校核基础埋深、抗拔和抗倾覆",
+      "核对风荷载组合下的整体稳定",
+      "确认场平、排水和基础施工边界"
+    ],
+    "designInstituteFocusZh": [
+      "要求设计院给出荷载取值与组合说明",
+      "补充基础计算书和节点详图",
+      "输出分区施工和验收边界"
+    ],
+    "riskAlertsZh": [
+      "高风地区基础偏浅会放大抗拔风险",
+      "短窗口施工容易压缩复核时间",
+      "阵列边界若未统一会引发审图反复"
+    ],
+    "summaryZh": "该组合可按标准技术评审推进，但必须把抗风和基础边界作为前置核查项。"
+  },
+  {
+    "id": "TR-002",
+    "projectType": "industrial_roof",
+    "structureScenario": "color_steel_roof",
+    "loadEnvironment": "corrosion",
+    "foundationCondition": "limited_anchor",
+    "siteConstraint": "keep_operation",
+    "targetMarket": "EU",
+    "reviewConclusionZh": "进入专项技术评审",
+    "reviewSignalZh": "重点关注屋面接口、耐久与不停线施工",
+    "technicalFocusZh": [
+      "核查彩钢瓦屋面板型、厚度和连接方式",
+      "确认腐蚀环境下的材料等级和防护体系",
+      "评估不停线施工对组织和吊装路径的影响"
+    ],
+    "loadFoundationFocusZh": [
+      "复核屋面附加荷载对既有结构的影响",
+      "核对限位锚固和连接件受力路径",
+      "检查腐蚀环境下的长期耐久要求"
+    ],
+    "designInstituteFocusZh": [
+      "要求设计院补充屋面承载和节点验算",
+      "明确防腐体系、维护周期和替换边界",
+      "输出施工期间的保护措施和停线限制"
+    ],
+    "riskAlertsZh": [
+      "既有屋面接口不清会放大局部破坏风险",
+      "腐蚀环境若未单独定义防护等级会影响寿命",
+      "不停线施工对安全边界和工序控制要求更高"
+    ],
+    "summaryZh": "该组合不适合直接套用通用方案，需按专项技术评审处理屋面接口、耐久和不停线施工边界。"
+  },
+  {
+    "id": "TR-003",
+    "projectType": "retrofit_roof",
+    "structureScenario": "concrete_roof",
+    "loadEnvironment": "seismic",
+    "foundationCondition": "existing_structure_limited",
+    "siteConstraint": "no_weld",
+    "targetMarket": "JP",
+    "reviewConclusionZh": "进入专项技术评审",
+    "reviewSignalZh": "重点关注既有结构承载和抗震细部做法",
+    "technicalFocusZh": [
+      "核查既有屋面承载、变形和加固条件",
+      "确认无动火约束下的连接和安装方式",
+      "评估抗震控制下的节点延性和位移需求"
+    ],
+    "loadFoundationFocusZh": [
+      "复核既有结构附加荷载和局部应力集中",
+      "检查连接件、底座和局部支撑的可靠性",
+      "确认抗震工况下的约束与滑移边界"
+    ],
+    "designInstituteFocusZh": [
+      "要求设计院提供既有结构复核与改造说明",
+      "补充抗震节点详图和施工顺序说明",
+      "输出无动火条件下的安装工法"
+    ],
+    "riskAlertsZh": [
+      "既有结构承载边界不清会导致评审反复",
+      "无动火限制会显著压缩可选工法",
+      "抗震细部若未前置定义会增加审图风险"
+    ],
+    "summaryZh": "该组合必须以既有结构复核为前提，并在无动火和抗震约束下单独形成技术审查结论。"
+  },
+  {
+    "id": "TR-004",
+    "projectType": "carport_walkway",
+    "structureScenario": "long_span_canopy",
+    "loadEnvironment": "high_wind",
+    "foundationCondition": "uncertain_geotech",
+    "siteConstraint": "no_anchor_penetration",
+    "targetMarket": "AU",
+    "reviewConclusionZh": "进入专项技术评审",
+    "reviewSignalZh": "重点关注大跨稳定、地勘边界和基础布置",
+    "technicalFocusZh": [
+      "复核大跨构件的整体稳定与挠度控制",
+      "确认地勘边界是否支撑当前基础方案",
+      "评估禁止穿透式锚固条件下的连接策略"
+    ],
+    "loadFoundationFocusZh": [
+      "校核高风工况下的抗拔和抗倾覆",
+      "确认基础布置与既有地下条件的冲突",
+      "检查基础施工与排水、回填条件"
+    ],
+    "designInstituteFocusZh": [
+      "要求设计院给出大跨节点和基础详图",
+      "补充地勘假设、承载边界和安全系数",
+      "明确无穿透锚固情况下的施工做法"
+    ],
+    "riskAlertsZh": [
+      "大跨结构在高风环境下对稳定控制更敏感",
+      "地勘边界不清会直接影响基础决策",
+      "无穿透锚固可能导致方案收敛速度变慢"
+    ],
+    "summaryZh": "该组合适合进入专项技术评审，优先把大跨稳定、地勘边界和基础连接方式收敛清楚。"
+  },
+  {
+    "id": "TR-005",
+    "projectType": "industrial_roof",
+    "structureScenario": "color_steel_roof",
+    "loadEnvironment": "normal",
+    "foundationCondition": "restricted_foundation",
+    "siteConstraint": "no_weld",
+    "targetMarket": "US",
+    "reviewConclusionZh": "可进入参数化技术评审",
+    "reviewSignalZh": "重点关注屋面荷载传递和安装效率",
+    "technicalFocusZh": [
+      "确认彩钢瓦屋面的板型和支撑间距",
+      "核对无动火条件下的安装方式",
+      "评估基础条件受限时的构造收敛路径"
+    ],
+    "loadFoundationFocusZh": [
+      "复核屋面荷载传递和局部变形",
+      "检查受限基础条件下的支撑布置",
+      "确认节点连接与施工效率的平衡"
+    ],
+    "designInstituteFocusZh": [
+      "要求设计院提供参数化节点和安装图纸",
+      "明确基础受限条件下的可选工法",
+      "补充北美资料输出和审查清单"
+    ],
+    "riskAlertsZh": [
+      "受限基础条件若未收敛会影响排布效率",
+      "无动火施工需要提前锁定安装工法",
+      "屋面局部受力和节点细节不能只看平面图"
+    ],
+    "summaryZh": "该组合可以进入参数化技术评审，但仍需确认屋面荷载传递、基础受限条件和无动火工法。"
+  }
+]

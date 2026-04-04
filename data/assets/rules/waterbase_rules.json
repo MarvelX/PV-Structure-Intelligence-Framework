@@ -1,0 +1,162 @@
+[
+  {
+    "id": "WB-001",
+    "structureType": "clear_water_tank",
+    "isRetrofit": "yes",
+    "spanLevel": "high",
+    "windLevel": "high",
+    "corrosionLevel": "high",
+    "interferenceLevel": "high",
+    "omRequirement": "high",
+    "supportCondition": "outer_support_only",
+    "targetMarket": "CN",
+    "recommendedPath": "flexible_support_first",
+    "recommendedPathZh": "优先评估柔性支架路径",
+    "standardizationLevel": "non_standard",
+    "standardizationLevelZh": "非标评审",
+    "materialDirection": "high_corrosion_grade",
+    "materialDirectionZh": "优先采用高防腐等级材料与连接策略",
+    "regionNote": "cn_baseline_with_special_review",
+    "regionNoteZh": "以国内基线校核为基础，但需提前进入专项技术评审并补充客户技术澄清。",
+    "primaryRisks": [
+      "wind_and_operation_conflict",
+      "foundation_disturbance",
+      "equipment_clearance"
+    ],
+    "primaryRisksZh": [
+      "高风环境下整体稳定与受力路径风险",
+      "外侧基础施工对既有管线与构筑物的干扰风险",
+      "设备运行与运维净空不足风险"
+    ],
+    "summary": "High-span retrofit clear water tank scenario. Flexible support should be reviewed first.",
+    "summaryZh": "该场景属于高跨度既有清水池改造，常规刚性落柱受限，建议优先评估柔性支架路径，并将风稳定、外侧基础施工和运维净空作为前置评审重点。"
+  },
+  {
+    "id": "WB-002",
+    "structureType": "clear_water_tank",
+    "isRetrofit": "yes",
+    "spanLevel": "medium",
+    "windLevel": "medium",
+    "corrosionLevel": "high",
+    "interferenceLevel": "medium",
+    "omRequirement": "high",
+    "supportCondition": "outer_support_only",
+    "targetMarket": "EU",
+    "recommendedPath": "flexible_support_first",
+    "recommendedPathZh": "柔性支架优先，参数化适配",
+    "standardizationLevel": "parameterized",
+    "standardizationLevelZh": "参数化产品",
+    "materialDirection": "high_corrosion_grade",
+    "materialDirectionZh": "提升防腐等级，并结合欧洲技术文件输出",
+    "regionNote": "eu_adaptation_required",
+    "regionNoteZh": "需同步考虑欧洲技术文件、安装效率表达和区域适配说明。",
+    "primaryRisks": [
+      "corrosion_and_access",
+      "foundation_path_review",
+      "region_file_requirement"
+    ],
+    "primaryRisksZh": [
+      "高腐蚀环境下长期耐久风险",
+      "基础与运维通道的路径冲突风险",
+      "欧洲区域文件和适配说明不足风险"
+    ],
+    "summary": "Retrofit water structure scenario with stronger corrosion and region-ready requirements.",
+    "summaryZh": "该场景具备较强既有改造属性和高腐蚀环境特征，建议以柔性路径为主，并通过参数化适配满足欧洲市场下的资料输出和安装逻辑。"
+  },
+  {
+    "id": "WB-003",
+    "structureType": "sedimentation_tank",
+    "isRetrofit": "yes",
+    "spanLevel": "medium",
+    "windLevel": "medium",
+    "corrosionLevel": "medium",
+    "interferenceLevel": "high",
+    "omRequirement": "high",
+    "supportCondition": "limited_pool_wall_support",
+    "targetMarket": "CN",
+    "recommendedPath": "compare_rigid_and_flexible",
+    "recommendedPathZh": "刚柔支架同步比选",
+    "standardizationLevel": "non_standard",
+    "standardizationLevelZh": "非标评审",
+    "materialDirection": "mixed_strategy",
+    "materialDirectionZh": "根据干扰和支撑边界选择混合材料策略",
+    "regionNote": "cn_special_case",
+    "regionNoteZh": "国内场景下可直接推进比选，但必须把设备干扰与施工组织前置。",
+    "primaryRisks": [
+      "equipment_clearance",
+      "construction_disturbance",
+      "support_boundary_unclear"
+    ],
+    "primaryRisksZh": [
+      "设备净空和运行干扰风险",
+      "施工对现状沉淀池运行的扰动风险",
+      "池壁或边界支撑条件不清晰风险"
+    ],
+    "summary": "Sedimentation tank scenario should not jump to one path before comparison.",
+    "summaryZh": "该场景不适合直接套用单一路径，建议刚性和柔性方案同步比选，并把设备净空、施工扰动和支撑边界作为核心判断依据。"
+  },
+  {
+    "id": "WB-004",
+    "structureType": "water_plant_roof",
+    "isRetrofit": "yes",
+    "spanLevel": "low",
+    "windLevel": "medium",
+    "corrosionLevel": "medium",
+    "interferenceLevel": "low",
+    "omRequirement": "medium",
+    "supportCondition": "roof_support_allowed",
+    "targetMarket": "AU",
+    "recommendedPath": "rigid_support_first",
+    "recommendedPathZh": "优先采用刚性支架标准化路径",
+    "standardizationLevel": "standard",
+    "standardizationLevelZh": "标准产品",
+    "materialDirection": "lightweight_corrosion_grade",
+    "materialDirectionZh": "轻量化耐腐蚀材料路径",
+    "regionNote": "au_wind_ready",
+    "regionNoteZh": "标准化路径可行，但需强化高风环境与屋面接口细节适配。",
+    "primaryRisks": [
+      "wind_adaptation",
+      "roof_interface_detail",
+      "local_attachment_review"
+    ],
+    "primaryRisksZh": [
+      "澳洲高风环境适配风险",
+      "屋面连接细节不充分风险",
+      "局部附着件选型不当风险"
+    ],
+    "summary": "This scenario is suitable for a standard product path with regional wind adaptation.",
+    "summaryZh": "该场景边界较清晰，适合优先采用刚性支架标准化路径，但仍需注意高风环境下的屋面连接细节和区域适配。"
+  },
+  {
+    "id": "WB-005",
+    "structureType": "water_plant_roof",
+    "isRetrofit": "yes",
+    "spanLevel": "low",
+    "windLevel": "low",
+    "corrosionLevel": "medium",
+    "interferenceLevel": "low",
+    "omRequirement": "medium",
+    "supportCondition": "roof_support_allowed",
+    "targetMarket": "JP",
+    "recommendedPath": "rigid_support_first",
+    "recommendedPathZh": "刚性支架优先，细部参数化适配",
+    "standardizationLevel": "parameterized",
+    "standardizationLevelZh": "参数化产品",
+    "materialDirection": "lightweight_corrosion_grade",
+    "materialDirectionZh": "轻量化耐腐蚀材料，并关注细部做法",
+    "regionNote": "jp_detail_ready",
+    "regionNoteZh": "应结合日本细部构造与局部保守性要求做参数化调整。",
+    "primaryRisks": [
+      "detail_and_seismic_check",
+      "localized_note_gap",
+      "roof_detail_mismatch"
+    ],
+    "primaryRisksZh": [
+      "局部细部与抗震语境适配风险",
+      "本地化技术说明不足风险",
+      "屋面细部做法不匹配风险"
+    ],
+    "summary": "The base product path is valid, but detail-level adaptation remains important.",
+    "summaryZh": "该场景可采用刚性支架的参数化路径，但需要针对日本市场的细部构造语境做更精细的适配和技术说明。"
+  }
+]

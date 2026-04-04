@@ -1,0 +1,13 @@
+{
+  "name": "v1-working-tool",
+  "private": true,
+  "scripts": {
+    "dev": "./scripts/dev.sh",
+    "dev:api": "uv run --project apps/api uvicorn api.main:app --app-dir apps/api/src --reload --host 127.0.0.1 --port 8000",
+    "dev:web": "npm --prefix apps/web run dev -- --host 127.0.0.1 --port 5173",
+    "test:api": "cd apps/api && uv run pytest",
+    "test:web": "npm --prefix apps/web test",
+    "build:web": "npm --prefix apps/web run build",
+    "lint:web": "npm --prefix apps/web run lint"
+  }
+}

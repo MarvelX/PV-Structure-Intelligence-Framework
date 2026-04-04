@@ -1,0 +1,32 @@
+[project]
+name = "api"
+version = "0.1.0"
+description = "Local backend for the V1 Working Tool"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "aiosqlite>=0.22.1",
+    "fastapi>=0.128.8",
+    "pydantic-settings>=2.11.0",
+    "python-slugify>=8.0.4",
+    "sqlalchemy>=2.0.49",
+    "uvicorn[standard]>=0.39.0",
+]
+
+[project.scripts]
+api = "api:main"
+
+[build-system]
+requires = ["uv_build>=0.10.9,<0.11.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=8.4.2",
+    "pytest-asyncio>=1.2.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
