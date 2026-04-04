@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     assets_dir: Path = Field(default_factory=lambda: Path(__file__).resolve().parents[4] / "data" / "assets")
     runtime_dir: Path = Field(default_factory=lambda: Path(__file__).resolve().parents[4] / "data" / "runtime")
     exports_dir: Path = Field(default_factory=lambda: Path(__file__).resolve().parents[4] / "data" / "runtime" / "exports")
+    web_dist_dir: Path = Field(default_factory=lambda: Path(__file__).resolve().parents[4] / "apps" / "web" / "dist")
     sqlite_busy_retries: int = 3
     evaluate_timeout_seconds: float = 10.0
 

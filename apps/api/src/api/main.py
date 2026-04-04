@@ -4,6 +4,8 @@ import asyncio
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from .assets import load_catalog
 from .config import Settings, get_settings
@@ -35,6 +37,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.evaluator = Evaluator(load_catalog(resolved_settings.assets_dir))
     app.state.repository = repository
     app.state.export_service = ExportService(resolved_settings.exports_dir)
+
+    web_dist_dir = resolved_settings.web_dist_dir
+    index_html = web_dist_dir / "index.html"
+    if web_dist_dir.exists():
+        web_assets_dir = web_dist_dir / "assets"
+        if web_assets_dir.exists():
+            app.mount("/assets", StaticFiles(directory=web_assets_dir), name="web-assets")
+
+        if index_html.exists():
+            @app.get("/")
+            async def serve_root() -> FileResponse:
+                return FileResponse(index_html)
 
     @app.get("/api/home/recent-records", response_model=RecentRecordsResponse)
     async def list_recent_records(limit: int = Query(default=6, ge=1, le=20)) -> RecentRecordsResponse:
@@ -95,6 +109,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             ) from exc
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    if index_html.exists():
+        @app.get("/{full_path:path}")
+        async def serve_spa(full_path: str) -> FileResponse:
+            if full_path.startswith("api/"):
+                raise HTTPException(status_code=404, detail="Not found")
+            return FileResponse(index_html)
 
     return app
 
