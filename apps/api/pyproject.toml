@@ -26,6 +26,7 @@ dev = [
     "httpx>=0.28.1",
     "pytest>=8.4.2",
     "pytest-asyncio>=1.2.0",
+    "pyinstaller>=6.13.0",
 ]
 
 [tool.pytest.ini_options]

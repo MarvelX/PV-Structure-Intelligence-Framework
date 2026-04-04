@@ -42,3 +42,17 @@ npm run build:web
 npm run lint:web
 npm run test:api
 ```
+
+## macOS 打包
+
+```bash
+npm run package:macos
+```
+
+打包完成后，`.app` 会输出到 `dist/macos/PV Structure Intelligence Framework.app`。
+
+如果第一次在 macOS 上打开未签名产物遇到 Gatekeeper 拦截，可以先解除隔离属性：
+
+```bash
+xattr -cr "/path/to/PV Structure Intelligence Framework.app"
+```
