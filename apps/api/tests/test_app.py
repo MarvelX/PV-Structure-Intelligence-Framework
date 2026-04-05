@@ -322,6 +322,52 @@ async def test_update_record_rejects_stale_expected_updated_at(client: AsyncClie
 
 
 @pytest.mark.asyncio()
+async def test_delete_record_removes_detail_recent_item_and_exports(client: AsyncClient) -> None:
+    create_response = await client.post(
+        "/api/records",
+        json={
+            "workspace": "waterbase",
+            "title_zh": "南昌清水池高难场景",
+            "title_en": "Nanchang High Complexity Water Tank",
+            "status": "ready",
+            "summary": "优先评估柔性支架路径。",
+            "tags": ["CN"],
+            "manual_override": None,
+            "input": {"structure_type": "clear_water_tank"},
+            "output": {"recommended_path": "优先评估柔性支架路径"},
+            "exports": {
+                "markdown": "# Nanchang High Complexity Water Tank",
+                "text": "Nanchang High Complexity Water Tank",
+            },
+            "links": {
+                "rule_ids": ["WB-001"],
+                "case_ids": ["case_nanchang_water_plant"],
+            },
+        },
+    )
+    assert create_response.status_code == 201
+    record = create_response.json()
+
+    export_files = record["exports"]["files"]
+    assert export_files
+    for export_file in export_files:
+        assert Path(export_file).exists()
+
+    delete_response = await client.delete(f"/api/records/{record['id']}")
+    assert delete_response.status_code == 204
+
+    detail_response = await client.get(f"/api/records/{record['id']}")
+    assert detail_response.status_code == 404
+
+    recent_response = await client.get("/api/home/recent-records?limit=6")
+    assert recent_response.status_code == 200
+    assert recent_response.json() == {"items": []}
+
+    for export_file in export_files:
+        assert not Path(export_file).exists()
+
+
+@pytest.mark.asyncio()
 async def test_evaluate_returns_504_when_backend_exceeds_timeout(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

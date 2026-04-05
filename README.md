@@ -7,6 +7,10 @@
 - `data/assets`: 规则、模板、案例、控制门、审核清单
 - `data/runtime`: 本地运行时数据与导出目录
 
+给真实试用者的说明见：
+
+- [`docs/release/2026-04-05-v1-internal-pilot-guide.md`](/Users/xiachen/Documents/Interview%20for%20PV%20Mounting%20System%20Product%20Manager/.worktrees/codex-v1-working-tool/docs/release/2026-04-05-v1-internal-pilot-guide.md)
+
 ## 本地启动
 
 首次进入工作区时：
@@ -55,4 +59,10 @@ npm run package:macos
 
 ```bash
 xattr -cr "/path/to/PV Structure Intelligence Framework.app"
+```
+
+然后执行：
+
+```bash
+open "dist/macos/PV Structure Intelligence Framework.app"
 ```

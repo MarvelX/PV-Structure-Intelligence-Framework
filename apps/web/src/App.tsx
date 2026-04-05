@@ -4,9 +4,13 @@ import { QueryClient, QueryClientProvider, useMutation, useQuery, useQueryClient
 import { useForm, useWatch, type DefaultValues, type FieldPath } from 'react-hook-form'
 
 import './App.css'
-import { evaluateWorkspace, fetchRecentRecords, fetchRecord, saveRecord, updateRecord } from './lib/api'
+import { deleteRecord, evaluateWorkspace, fetchRecentRecords, fetchRecord, saveRecord, updateRecord } from './lib/api'
 import type { EvaluateResponse, RecordState, RecordUpdatePayload } from './types'
 import { overseasConfig, waterbaseConfig, type WorkspaceConfig } from './workspaces'
+
+function confirmRecordDeletion(title: string) {
+  return window.confirm(`确认删除记录「${title}」？此操作会同时删除本地导出文件，且不可撤销。`)
+}
 
 function AppShell() {
   return (
@@ -36,9 +40,16 @@ function AppShell() {
 
 
 function HomePage() {
+  const queryClient = useQueryClient()
   const { data } = useQuery({
     queryKey: ['recent-records'],
     queryFn: () => fetchRecentRecords(6),
+  })
+  const deleteMutation = useMutation({
+    mutationFn: (recordId: string) => deleteRecord(recordId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['recent-records'] })
+    },
   })
 
   return (
@@ -46,7 +57,7 @@ function HomePage() {
       <section className="hero">
         <div>
           <p className="eyebrow">Local Product + Technical Decision Workbench</p>
-          <h1>从静态 Demo 升级为可工作的本地工具</h1>
+          <h1>PV Structure Intelligence Framework</h1>
           <p className="hero-copy">
             在同一个入口下，完成场景录入、实时推演、摘要导出、手动保存和记录回看。
           </p>
@@ -105,9 +116,23 @@ function HomePage() {
                 </p>
                 <h3>{item.title_zh}</h3>
                 <p>{item.summary}</p>
-                <Link className="inline-link" to={`/records/${item.id}`}>
-                  Open Record
-                </Link>
+                <div className="recent-actions">
+                  <Link className="inline-link" to={`/records/${item.id}`}>
+                    Open Record
+                  </Link>
+                  <button
+                    className="inline-button danger"
+                    disabled={deleteMutation.isPending}
+                    onClick={() => {
+                      if (!confirmRecordDeletion(item.title_zh)) return
+                      deleteMutation.mutate(item.id)
+                    }}
+                    type="button"
+                    aria-label={`删除记录 ${item.title_zh}`}
+                  >
+                    Delete
+                  </button>
+                </div>
               </article>
             ))
           ) : (
@@ -347,6 +372,7 @@ function WorkspacePage<TValues extends Record<string, string>>({
 
 function RecordDetailPage() {
   const { recordId = '' } = useParams()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { data } = useQuery({
     queryKey: ['record', recordId],
@@ -354,6 +380,7 @@ function RecordDetailPage() {
   })
   const [saveFeedback, setSaveFeedback] = useState('')
   const [saveError, setSaveError] = useState('')
+  const [deleteError, setDeleteError] = useState('')
 
   const updateMutation = useMutation({
     mutationFn: (payload: RecordUpdatePayload) => updateRecord(recordId, payload),
@@ -366,6 +393,17 @@ function RecordDetailPage() {
     onError: (mutationError: Error) => {
       setSaveFeedback('')
       setSaveError(mutationError.message)
+    },
+  })
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteRecord(recordId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['recent-records'] })
+      queryClient.removeQueries({ queryKey: ['record', recordId] })
+      navigate('/')
+    },
+    onError: (mutationError: Error) => {
+      setDeleteError(mutationError.message)
     },
   })
 
@@ -403,6 +441,29 @@ function RecordDetailPage() {
           saveFeedback={saveFeedback}
           saving={updateMutation.isPending}
         />
+        <section className="panel detail-block">
+          <div className="panel-heading">
+            <div>
+              <p className="section-tag">Danger Zone</p>
+              <h2>记录删除</h2>
+            </div>
+          </div>
+          {deleteError ? <div className="error-banner">{deleteError}</div> : null}
+          <div className="action-row">
+            <button
+              className="action-button danger"
+              disabled={deleteMutation.isPending}
+              onClick={() => {
+                if (!confirmRecordDeletion(data.title_zh)) return
+                setDeleteError('')
+                deleteMutation.mutate()
+              }}
+              type="button"
+            >
+              Delete Record
+            </button>
+          </div>
+        </section>
         <DetailBlock title="输入快照" content={data.input} />
         <DetailBlock title="输出详情" content={data.output} />
         <DetailBlock title="导出内容" content={data.exports} />
@@ -513,8 +574,51 @@ function DetailBlock({ title, content }: { title: string; content: unknown }) {
   return (
     <section className="panel detail-block">
       <h2>{title}</h2>
-      <pre>{JSON.stringify(content, null, 2)}</pre>
+      <div className="detail-content">
+        <DetailValue value={content} />
+      </div>
     </section>
+  )
+}
+
+function DetailValue({ value }: { value: unknown }) {
+  if (value === null || value === undefined) {
+    return <pre>null</pre>
+  }
+
+  if (typeof value === 'string') {
+    return <pre>{value}</pre>
+  }
+
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return <pre>{String(value)}</pre>
+  }
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      return <pre>[]</pre>
+    }
+
+    return (
+      <div className="detail-list">
+        {value.map((item, index) => (
+          <div className="detail-list-item" key={index}>
+            <DetailValue value={item} />
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div className="detail-object">
+      {Object.entries(value as Record<string, unknown>).map(([key, itemValue]) => (
+        <div className="detail-row" key={key}>
+          <strong>{key}</strong>
+          <DetailValue value={itemValue} />
+        </div>
+      ))}
+    </div>
   )
 }
 

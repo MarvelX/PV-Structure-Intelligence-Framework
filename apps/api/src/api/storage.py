@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
-from sqlalchemy import DateTime, String, Text, create_engine, desc, select, update
+from sqlalchemy import DateTime, String, Text, create_engine, delete, desc, select, update
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
@@ -195,6 +195,29 @@ class RecordRepository:
             if entity is None:
                 raise KeyError(record_id)
             return _to_record_response(entity)
+
+    def delete_record(self, record_id: str) -> None:
+        export_files: List[str] = []
+
+        def _delete(session: Session) -> None:
+            nonlocal export_files
+
+            entity = session.get(RecordEntity, record_id)
+            if entity is None:
+                raise KeyError(record_id)
+
+            exports = ExportPayload(**json.loads(entity.exports_json))
+            export_files = list(exports.files)
+            session.execute(delete(RecordEntity).where(RecordEntity.id == record_id))
+            session.commit()
+
+        self._with_retry(_delete)
+
+        for export_file in export_files:
+            try:
+                Path(export_file).unlink()
+            except FileNotFoundError:
+                continue
 
     def list_recent_records(self, limit: int = 6) -> List[RecordResponse]:
         with self._session_factory() as session:

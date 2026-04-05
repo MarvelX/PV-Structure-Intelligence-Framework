@@ -18,10 +18,18 @@ function mockFetch(
     const payload = typeof resolver === 'function' ? await resolver(input, init) : resolver
 
     if (payload === undefined) {
+      if (method === 'DELETE') {
+        return new Response(null, { status: 204 })
+      }
+
       return new Response(JSON.stringify({ message: `Unhandled route: ${key}` }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
       })
+    }
+
+    if (method === 'DELETE') {
+      return new Response(null, { status: 204 })
     }
 
     return new Response(JSON.stringify(payload), {
@@ -38,6 +46,7 @@ function mockFetch(
 describe('V1 Working Tool App', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
+    vi.restoreAllMocks()
   })
 
   it('renders recent records on the home page', async () => {
@@ -65,6 +74,83 @@ describe('V1 Working Tool App', () => {
     expect(await screen.findByText('Recent Records')).toBeInTheDocument()
     expect(await screen.findByText('南昌清水池高难场景')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /open record/i })).toHaveAttribute('href', '/records/rec-1')
+  })
+
+  it('deletes a recent record from the home page', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const fetchMock = mockFetch({
+      'GET /api/home/recent-records?limit=6': { items: [] },
+      'DELETE /api/records/rec-1': null,
+    })
+
+    fetchMock.mockImplementationOnce(async () =>
+      new Response(
+        JSON.stringify({
+          items: [
+            {
+              id: 'rec-1',
+              workspace: 'waterbase',
+              title_zh: '南昌清水池高难场景',
+              title_en: 'Nanchang High Complexity Water Tank',
+              status: 'ready',
+              tags: ['CN'],
+              created_at: '2026-04-04T08:00:00Z',
+              updated_at: '2026-04-04T08:00:00Z',
+              summary: '优先评估柔性支架路径。',
+            },
+          ],
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      ),
+    )
+
+    window.history.pushState({}, '', '/')
+    render(<App />)
+
+    expect(await screen.findByText('南昌清水池高难场景')).toBeInTheDocument()
+
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: '删除记录 南昌清水池高难场景' }))
+
+    await waitFor(() =>
+      expect(screen.getByText('No saved records yet. Start from one of the two workspaces.')).toBeInTheDocument(),
+    )
+  })
+
+  it('does not delete a recent record when confirmation is cancelled', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const fetchMock = mockFetch({
+      'GET /api/home/recent-records?limit=6': {
+        items: [
+          {
+            id: 'rec-1',
+            workspace: 'waterbase',
+            title_zh: '南昌清水池高难场景',
+            title_en: 'Nanchang High Complexity Water Tank',
+            status: 'ready',
+            tags: ['CN'],
+            created_at: '2026-04-04T08:00:00Z',
+            updated_at: '2026-04-04T08:00:00Z',
+            summary: '优先评估柔性支架路径。',
+          },
+        ],
+      },
+      'DELETE /api/records/rec-1': null,
+    })
+
+    window.history.pushState({}, '', '/')
+    render(<App />)
+
+    expect(await screen.findByText('南昌清水池高难场景')).toBeInTheDocument()
+
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: '删除记录 南昌清水池高难场景' }))
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(screen.getByText('南昌清水池高难场景')).toBeInTheDocument()
   })
 
   it('keeps save and export disabled while pending and enables them when ready', async () => {
@@ -250,5 +336,43 @@ describe('V1 Working Tool App', () => {
         note: 'Need local institute seismic memo',
       },
     })
+  })
+
+  it('renders export text without escaped newline gibberish on the record detail page', async () => {
+    mockFetch({
+      'GET /api/home/recent-records?limit=6': { items: [] },
+      'GET /api/records/rec-1': {
+        id: 'rec-1',
+        workspace: 'waterbase',
+        title_zh: '南昌清水池高难场景',
+        title_en: 'Nanchang High Complexity Water Tank',
+        status: 'ready',
+        tags: ['CN'],
+        created_at: '2026-04-04T08:00:00Z',
+        updated_at: '2026-04-04T08:00:00Z',
+        summary: '优先评估柔性支架路径。',
+        manual_override: null,
+        input: { structure_type: 'clear_water_tank' },
+        output: { recommended_path: '优先评估柔性支架路径' },
+        exports: {
+          markdown: '# Heading\nLine 2',
+          text: '第一行\n第二行',
+          files: [],
+          errors: [],
+        },
+        links: {
+          rule_ids: ['WB-001'],
+          case_ids: ['case_nanchang_water_plant'],
+          gate_ids: [],
+          checklist_ids: [],
+        },
+      },
+    })
+
+    window.history.pushState({}, '', '/records/rec-1')
+    render(<App />)
+
+    expect(await screen.findByText((content) => content.includes('第一行') && content.includes('第二行'))).toBeInTheDocument()
+    expect(screen.queryByText(/\\n第二行/)).not.toBeInTheDocument()
   })
 })

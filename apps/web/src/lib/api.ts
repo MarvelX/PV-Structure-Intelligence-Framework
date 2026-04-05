@@ -23,7 +23,16 @@ async function request<T>(input: string, init?: RequestInit): Promise<T> {
       throw new Error(message || `Request failed: ${response.status}`)
     }
 
-    return response.json() as Promise<T>
+    if (response.status === 204) {
+      return undefined as T
+    }
+
+    const responseText = await response.text()
+    if (!responseText) {
+      return undefined as T
+    }
+
+    return JSON.parse(responseText) as T
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
       throw new Error(`Request timed out after ${REQUEST_TIMEOUT_MS / 1000} seconds`)
@@ -61,5 +70,11 @@ export function updateRecord(recordId: string, payload: RecordUpdatePayload) {
   return request<RecordDetail>(`/api/records/${recordId}`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
+  })
+}
+
+export function deleteRecord(recordId: string) {
+  return request<void>(`/api/records/${recordId}`, {
+    method: 'DELETE',
   })
 }

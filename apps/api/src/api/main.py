@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -109,6 +109,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             ) from exc
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    @app.delete("/api/records/{record_id}", status_code=204)
+    async def delete_record(record_id: str) -> Response:
+        try:
+            app.state.repository.delete_record(record_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=f"Record {record_id} not found") from exc
+        return Response(status_code=204)
 
     if index_html.exists():
         @app.get("/{full_path:path}")
